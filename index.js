@@ -12,7 +12,6 @@ process.on('exit', () => {
 })
 
 process.on('SIGINT', () => {
-  console.log('\n')
   process.exit(0)
 })
 
