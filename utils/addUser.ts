@@ -1,8 +1,9 @@
 import {appData} from "../index";
 const { v4: uuidv4 } = require('uuid');
+import {IncomingMessage} from 'http';
 
 
-function addUser(request: any) {
+function addUser(request: IncomingMessage) {
   let reqBody: any = '';
   request.on('data', (chunk: Buffer) => {
     reqBody += chunk;

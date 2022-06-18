@@ -1,6 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse} from 'http';
 const urll = require('url');
 const addUser = require('./utils/addUser')
+const addUserById = require('./utils/changeUser')
 const {version, validate} = require('uuid')
 
 const port = 8000;
@@ -36,6 +37,21 @@ server.on('request', async (req:IncomingMessage, res:ServerResponse) => {
       res.end(JSON.stringify(appData))
       break;
     case 'PUT':
+      if(uuidValidateV4(id)) {
+        const userIndex = appData.findIndex(user => user.id === id)
+        const userId = appData.find(user => user.id === id).id
+        if(userIndex > -1) {
+          addUserById(req, userIndex, userId)
+          res.statusCode = 200
+          res.end("User has been updated")
+        } else {
+          res.statusCode = 404
+          res.end("User doesn't exist")
+        }
+      } else {
+        res.statusCode = 404
+        res.end('Not valid id')
+      }
       break;
     case 'DELETE':
       if(uuidValidateV4(id)) {
