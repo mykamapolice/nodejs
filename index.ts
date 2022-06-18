@@ -1,30 +1,45 @@
 import { createServer, IncomingMessage, ServerResponse} from 'http';
-const urll = require('url');
-const addUser = require('./utils/addUser')
-const addUserById = require('./utils/changeUser')
-const {version, validate} = require('uuid')
-
-const port = 8000;
+import {uuidValidateV4} from "./helpers"
+import {IAppData} from "./interfaces";
+import {addUser} from "./utils/addUser";
+import {addUserById} from "./utils/changeUser";
+import * as url from "url";
+import 'dotenv/config';
+import * as process from "process";
+const {appData} = require('./data')
 
 const server = createServer()
 
-function uuidValidateV4(uuid: string) {
-  return validate(uuid) && version(uuid) === 4;
-}
-
-export let appData: any[] = []
-
 server.on('request', async (req:IncomingMessage, res:ServerResponse) => {
 
-  const {method, url} = req
-  const {id} = urll.parse(req.url, true).query;
+  const {method} = req
+  const address = req.url
+  // @ts-ignore
+  const id: string = url.parse(address, true).query.id;
 
   switch(method){
     case 'GET':
-      if(url === '/users'){
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 200
-        res.end(JSON.stringify(appData))
+      if(address && !!address.includes('/users')){
+        if(id) {
+          if(uuidValidateV4(id)) {
+            const userIndex = appData.findIndex((user: IAppData) => user.id === id)
+            if(userIndex > -1) {
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200
+              res.end(JSON.stringify(appData[userIndex]))
+            } else {
+              res.statusCode = 404
+              res.end("User doesn't exist")
+            }
+          } else {
+            res.statusCode = 404
+            res.end('Not valid id')
+          }
+        } else {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200
+          res.end(JSON.stringify(appData))
+        }
       } else {
         res.statusCode = 400
         res.end('Cant find page')
@@ -38,8 +53,8 @@ server.on('request', async (req:IncomingMessage, res:ServerResponse) => {
       break;
     case 'PUT':
       if(uuidValidateV4(id)) {
-        const userIndex = appData.findIndex(user => user.id === id)
-        const userId = appData.find(user => user.id === id).id
+        const userIndex = appData.findIndex((user: IAppData) => user.id === id)
+        const userId = appData.find((user: IAppData) => user.id === id)?.id
         if(userIndex > -1) {
           addUserById(req, userIndex, userId)
           res.statusCode = 200
@@ -55,10 +70,8 @@ server.on('request', async (req:IncomingMessage, res:ServerResponse) => {
       break;
     case 'DELETE':
       if(uuidValidateV4(id)) {
-        const userIndex = appData.findIndex(user => user.id === id)
-        console.log(userIndex)
+        const userIndex = appData.findIndex((user: IAppData) => user.id === id)
         if(userIndex > -1) {
-          console.log('here')
           appData.splice(userIndex, 1)
           res.statusCode = 204
           res.end("User has been deleted")
@@ -71,11 +84,12 @@ server.on('request', async (req:IncomingMessage, res:ServerResponse) => {
         res.end('Not valid id')
       }
       break;
+    default:
+      res.statusCode = 404
+      res.end('Can not find url')
   }
-
-  res.end()
 })
 
-server.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+server.listen(process.env.PORT, () => {
+    console.log(`Server listening on port ${process.env.PORT}`);
 });

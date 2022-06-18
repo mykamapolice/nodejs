@@ -1,8 +1,7 @@
-import {appData} from "../index";
-const { v4: uuidv4 } = require('uuid');
 import {IncomingMessage} from 'http';
+import {appData} from "../data";
 
-function addUserByIndex(request: IncomingMessage, index: number, id: string) {
+export function addUserById(request: IncomingMessage, index: number, id: string) {
   let reqBody: any = '';
   request.on('data', (chunk: Buffer) => {
     reqBody += chunk;
@@ -12,5 +11,3 @@ function addUserByIndex(request: IncomingMessage, index: number, id: string) {
     appData[index] = parsedBody
   });
 }
-
-module.exports = addUserByIndex

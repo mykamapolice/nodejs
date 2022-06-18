@@ -1,9 +1,10 @@
-import {appData} from "../index";
+import {appData} from "../data";
+
 const { v4: uuidv4 } = require('uuid');
 import {IncomingMessage} from 'http';
 
 
-function addUser(request: IncomingMessage) {
+export function addUser(request: IncomingMessage) {
   let reqBody: any = '';
   request.on('data', (chunk: Buffer) => {
     reqBody += chunk;
@@ -13,5 +14,3 @@ function addUser(request: IncomingMessage) {
     appData.push(parsedBody)
   });
 }
-
-module.exports = addUser
