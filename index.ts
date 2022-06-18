@@ -1,12 +1,17 @@
 import { createServer, IncomingMessage, ServerResponse} from 'http';
 const urll = require('url');
 const addUser = require('./utils/addUser')
+const {version, validate} = require('uuid')
 
 const port = 8000;
 
 const server = createServer()
 
-export const appData: any[] = []
+function uuidValidateV4(uuid: string) {
+  return validate(uuid) && version(uuid) === 4;
+}
+
+export let appData: any[] = []
 
 server.on('request', async (req:IncomingMessage, res:ServerResponse) => {
 
@@ -33,6 +38,22 @@ server.on('request', async (req:IncomingMessage, res:ServerResponse) => {
     case 'PUT':
       break;
     case 'DELETE':
+      if(uuidValidateV4(id)) {
+        const userIndex = appData.findIndex(user => user.id === id)
+        console.log(userIndex)
+        if(userIndex > -1) {
+          console.log('here')
+          appData.splice(userIndex, 1)
+          res.statusCode = 204
+          res.end("User has been deleted")
+        } else {
+          res.statusCode = 404
+          res.end("User doesn't exist")
+        }
+      } else {
+        res.statusCode = 404
+        res.end('Not valid id')
+      }
       break;
   }
 
