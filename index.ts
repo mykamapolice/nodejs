@@ -1,44 +1,66 @@
 import { createServer, IncomingMessage, ServerResponse} from 'http';
-const urll = require('url');
-const addUser = require('./utils/addUser')
-
-const port = 8000;
+import {addUser} from "./utils/addUser";
+import { changeUser} from "./utils/changeUser";
+import * as url from "url";
+import 'dotenv/config';
+import * as process from "process";
+import {getUsers} from "./utils/getUsers";
+import {deleteUser} from "./utils/deleteUser";
+import {emitServerError} from "./utils/serverError";
 
 const server = createServer()
 
-export const appData: any[] = []
-
 server.on('request', async (req:IncomingMessage, res:ServerResponse) => {
 
-  const {method, url} = req
-  const {id} = urll.parse(req.url, true).query;
+  const {method} = req
+  const address = req.url
+  // @ts-ignore
+  const id: string = url.parse(address, true).query.id;
 
-  switch(method){
-    case 'GET':
-      if(url === '/users'){
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 200
-        res.end(JSON.stringify(appData))
-      } else {
-        res.statusCode = 400
-        res.end('Cant find page')
-      }
-      break;
-    case 'POST':
-      addUser(req)
-      res.statusCode = 200
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify(appData))
-      break;
-    case 'PUT':
-      break;
-    case 'DELETE':
-      break;
+  if(address?.split('/')[1].includes('users')) {
+    switch(method){
+      case 'GET':
+        try {
+          getUsers(res, id)
+        }
+        catch (e) {
+          emitServerError(res)
+        }
+        break;
+      case 'POST':
+        try {
+          addUser(req, res)
+        }
+        catch (e) {
+          emitServerError(res)
+        }
+        break;
+      case 'PUT':
+        try {
+          changeUser(req, res, id)
+        }
+        catch (e) {
+          emitServerError(res)
+        }
+        break;
+      case 'DELETE':
+        try {
+          deleteUser(res, id)
+        }
+        catch (e) {
+          emitServerError(res)
+        }
+        break;
+      default:
+        res.statusCode = 404
+        res.end('Method is not valid')
+    }
+  } else {
+    res.statusCode = 400
+    res.end('Cant find url')
   }
-
-  res.end()
 })
 
-server.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+server.listen(process.env.PORT, () => {
+    console.log(`Server listening on port ${process.env.PORT}`);
 });
