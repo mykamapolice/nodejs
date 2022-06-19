@@ -17,9 +17,6 @@ server.on('request', async (req:IncomingMessage, res:ServerResponse) => {
   // @ts-ignore
   const id: string = url.parse(address, true).query.id;
 
-  console.log(address?.split('/')[1])
-  console.log(id)
-
   if(address?.split('/')[1].includes('users')) {
     switch(method){
       case 'GET':
