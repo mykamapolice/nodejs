@@ -1,12 +1,12 @@
 import { createServer, IncomingMessage, ServerResponse} from 'http';
-import {uuidValidateV4} from "./helpers"
-import {IAppData} from "./interfaces";
 import {addUser} from "./utils/addUser";
-import {addUserById} from "./utils/changeUser";
+import { changeUser} from "./utils/changeUser";
 import * as url from "url";
 import 'dotenv/config';
 import * as process from "process";
-import {appData} from "./data";
+import {getUsers} from "./utils/getUsers";
+import {deleteUser} from "./utils/deleteUser";
+import {emitServerError} from "./utils/serverError";
 
 const server = createServer()
 
@@ -17,78 +17,50 @@ server.on('request', async (req:IncomingMessage, res:ServerResponse) => {
   // @ts-ignore
   const id: string = url.parse(address, true).query.id;
 
-  if(address && !!address.includes('/users')) {
+  console.log(address?.split('/')[1])
+  console.log(id)
+
+  if(address?.split('/')[1].includes('users')) {
     switch(method){
       case 'GET':
-          if(id) {
-            if(uuidValidateV4(id)) {
-              const userIndex = appData.findIndex((user: IAppData) => user.id === id)
-              if(userIndex > -1) {
-                res.setHeader('Content-Type', 'application/json');
-                res.statusCode = 200
-                res.end(JSON.stringify(appData[userIndex]))
-              } else {
-                res.statusCode = 404
-                res.end("User doesn't exist")
-              }
-            } else {
-              res.statusCode = 404
-              res.end('Not valid id')
-            }
-          } else {
-            res.setHeader('Content-Type', 'application/json');
-            res.statusCode = 200
-            res.end(JSON.stringify(appData))
-          }
+        try {
+          getUsers(res, id)
+        }
+        catch (e) {
+          emitServerError(res)
+        }
         break;
       case 'POST':
-        const result = addUser(req)
-        console.log(result)
-        // if(!result)
-        res.statusCode = 200
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(appData))
+        try {
+          addUser(req, res)
+        }
+        catch (e) {
+          emitServerError(res)
+        }
         break;
       case 'PUT':
-        if(uuidValidateV4(id)) {
-          const userIndex = appData.findIndex((user: IAppData) => user.id === id)
-          const userId = appData.find((user: IAppData) => user.id === id)?.id!
-          if(userIndex > -1) {
-            addUserById(req, userIndex, userId)
-            res.statusCode = 200
-            res.end("User has been updated")
-          } else {
-            res.statusCode = 404
-            res.end("User doesn't exist")
-          }
-        } else {
-          res.statusCode = 404
-          res.end('Not valid id')
+        try {
+          changeUser(req, res, id)
+        }
+        catch (e) {
+          emitServerError(res)
         }
         break;
       case 'DELETE':
-        if(uuidValidateV4(id)) {
-          const userIndex = appData.findIndex((user: IAppData) => user.id === id)
-          if(userIndex > -1) {
-            appData.splice(userIndex, 1)
-            res.statusCode = 204
-            res.end("User has been deleted")
-          } else {
-            res.statusCode = 404
-            res.end("User doesn't exist")
-          }
-        } else {
-          res.statusCode = 404
-          res.end('Not valid id')
+        try {
+          deleteUser(res, id)
+        }
+        catch (e) {
+          emitServerError(res)
         }
         break;
       default:
         res.statusCode = 404
-        res.end('Can not find url')
+        res.end('Method is not valid')
     }
   } else {
     res.statusCode = 400
-    res.end('Cant find page')
+    res.end('Cant find url')
   }
 })
 
